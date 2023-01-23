@@ -37,6 +37,26 @@ local Library = {
     OpenedFrames = {};
 };
 
+task.spawn(function()
+    local Tick = tick();
+    local Hue = 0;
+
+    while RenderStepped:Wait() do
+        if tick() - Tick >= (1 / 60) then
+            Hue = Hue + (1 / 400);
+
+            if Hue > 1 then
+                Hue = 0;
+            end;
+
+            Library.CurrentRainbowHue = Hue;
+            Library.CurrentRainbowColor = Color3.fromHSV(Hue, 0.8, 1);
+
+            Tick = tick();
+        end;
+    end;
+end);
+
 function Library:AttemptSave()
     if Library.SaveManager then
         Library.SaveManager:Save();
