@@ -1,7 +1,7 @@
-local HttpService = game:GetService('HttpService')
+local httpService = game:GetService('HttpService')
 
 local SaveManager = {} do
-	SaveManager.Folder = 'LinoriaLibSettings'
+	SaveManager.Folder = 'Extreme Edge'
 	SaveManager.Ignore = {}
 	SaveManager.Parser = {
 		Toggle = {
@@ -36,11 +36,11 @@ local SaveManager = {} do
 		},
 		ColorPicker = {
 			Save = function(idx, object)
-				return { type = 'ColorPicker', idx = idx, value = object.Value:ToHex() }
+				return { type = 'ColorPicker', idx = idx, value = object.Value:ToHex(), transparency = object.Transparency }
 			end,
 			Load = function(idx, data)
 				if Options[idx] then 
-					Options[idx]:SetValueRGB(Color3.fromHex(data.value))
+					Options[idx]:SetValueRGB(Color3.fromHex(data.value), data.transparency)
 				end
 			end,
 		},
@@ -53,7 +53,18 @@ local SaveManager = {} do
 					Options[idx]:SetValue({ data.key, data.mode })
 				end
 			end,
-		}
+		},
+
+		Input = {
+			Save = function(idx, object)
+				return { type = 'Input', idx = idx, text = object.Value }
+			end,
+			Load = function(idx, data)
+				if Options[idx] and type(data.text) == 'string' then
+					Options[idx]:SetValue(data.text)
+				end
+			end,
+		},
 	}
 
 	function SaveManager:SetIgnoreIndexes(list)
@@ -68,6 +79,10 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:Save(name)
+		if (not name) then
+			return false, 'no config file is selected'
+		end
+
 		local fullPath = self.Folder .. '/settings/' .. name .. '.json'
 
 		local data = {
@@ -87,7 +102,7 @@ local SaveManager = {} do
 			table.insert(data.objects, self.Parser[option.Type].Save(idx, option))
 		end	
 
-		local success, encoded = pcall(HttpService.JSONEncode, HttpService, data)
+		local success, encoded = pcall(httpService.JSONEncode, httpService, data)
 		if not success then
 			return false, 'failed to encode data'
 		end
@@ -97,10 +112,14 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:Load(name)
+		if (not name) then
+			return false, 'no config file is selected'
+		end
+
 		local file = self.Folder .. '/settings/' .. name .. '.json'
 		if not isfile(file) then return false, 'invalid file' end
 
-		local success, decoded = pcall(HttpService.JSONDecode, HttpService, readfile(file))
+		local success, decoded = pcall(httpService.JSONDecode, httpService, readfile(file))
 		if not success then return false, 'decode error' end
 
 		for _, option in next, decoded.objects do
@@ -157,7 +176,7 @@ local SaveManager = {} do
 				end
 			end
 		end
-		
+
 		return out
 	end
 
@@ -227,7 +246,7 @@ local SaveManager = {} do
 
 			self.Library:Notify(string.format('Overwrote config %q', name))
 		end)
-		
+
 		section:AddButton('Autoload config', function()
 			local name = Options.SaveManager_ConfigList.Value
 			writefile(self.Folder .. '/settings/autoload.txt', name)
